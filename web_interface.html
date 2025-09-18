@@ -85,7 +85,7 @@
         
         <div class="api-info">
             <strong>API Endpoint:</strong> 
-            <span id="api-url">https://your-ecg-api.herokuapp.com</span>
+            <span id="api-url">https://african-ecg-api-e6aa2b0911b5.herokuapp.com</span>
             <button onclick="updateApiUrl()">Update URL</button>
         </div>
 
@@ -103,7 +103,7 @@
     </div>
 
     <script>
-        let currentApiUrl = 'https://your-ecg-api.herokuapp.com';
+        let currentApiUrl = 'https://african-ecg-api-e6aa2b0911b5.herokuapp.com';
         
         function updateApiUrl() {
             const newUrl = prompt('Enter your Heroku app URL:', currentApiUrl);
@@ -147,8 +147,8 @@
                     </div>`;
                 } else {
                     html = `<div class="form-group">
-                        <label for="${feat}">${feat.replace(/_/g, ' ')}:</label>
-                        <input type="number" id="${feat}" name="${feat}" step="0.1" placeholder="Enter ${feat.replace(/_/g, ' ')}">
+                        <label for="${feat}">${feat}:</label>
+                        <input type="number" id="${feat}" name="${feat}" step="0.1" placeholder="Enter ${feat}">
                     </div>`;
                 }
                 form.innerHTML += html;
@@ -235,7 +235,7 @@
             
             const formData = new FormData(e.target);
             const data = {};
-            // Build the data object for all features
+            // Ensure every feature is sent, using dummy/example value if missing
             features.forEach(feat => {
                 let val = formData.get(feat);
                 if (val !== null && val !== '') {
@@ -245,8 +245,14 @@
                         data[feat] = parseFloat(val);
                     }
                 } else {
-                    // If empty, use example value or 0
+                    // Use dummy/example value if not provided
                     data[feat] = exampleValues[feat] !== undefined ? exampleValues[feat] : 0;
+                }
+            });
+            // Defensive: ensure all keys from exampleValues are present
+            Object.keys(exampleValues).forEach(feat => {
+                if (!(feat in data)) {
+                    data[feat] = exampleValues[feat];
                 }
             });
             const threshold = parseFloat(formData.get('threshold')) || 0.5;

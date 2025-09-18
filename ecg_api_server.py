@@ -71,7 +71,7 @@ def load_model():
         model_path = os.environ.get('MODEL_PATH', 'ecg_abnormality_classifier_lightgbm.pkl')
         model_data = joblib.load(model_path)
         # Populate dummy feature data
-        features = model_data.get('feature_selector_features', [])
+        features = model_data.get('feature_selector_features', [])#get the features used in training
         dummy_example = {}
         for feat in features:
             if feat.lower() == 'gender':
