@@ -71,7 +71,7 @@ def load_model():
         model_path = os.environ.get('MODEL_PATH', 'ecg_abnormality_classifier_lightgbm_.pkl')
         model_data = joblib.load(model_path)
         # Populate dummy feature data
-        features = model_data.get('feature_selector_features', [])#get the features used in training
+        features = model_data.get('feature_names', [])#get the features used in training
         dummy_example = {}
         for feat in features:
             if feat.lower() == 'gender':
@@ -135,7 +135,7 @@ def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
                     processed_data[col] = le.transform(processed_data[col])
     
     # Select only the features that were used in training
-    selected_features = model_data['feature_selector_features']
+    selected_features = model_data['feature_names']
     available_features = [feat for feat in selected_features if feat in processed_data.columns]
     
     if len(available_features) != len(selected_features):
@@ -193,7 +193,7 @@ async def get_model_info():
         model_name="LightGBM ECG Classifier",
         version="1.0.0",
         accuracy=float(metrics['roc_auc']),
-        features_count=len(model_data['feature_selector_features']),
+        features_count=len(model_data['feature_names']),
         training_samples=5068
     )
 
@@ -336,7 +336,7 @@ async def get_model_features():
     if model_data is None:
         load_model()
     # Always return the full feature list from the model
-    features = model_data['feature_selector_features'] if model_data and 'feature_selector_features' in model_data else []
+    features = model_data['feature_names'] if model_data and 'feature_names' in model_data else []
     example = model_data.get('dummy_example', {})
     return {"features": features, "example": example}
 
