@@ -68,7 +68,7 @@ def load_model():
     global model_data
     try:
         # Try to load model file
-        model_path = os.environ.get('MODEL_PATH', 'ecg_abnormality_classifier_lightgbm.pkl')
+        model_path = os.environ.get('MODEL_PATH', 'ecg_abnormality_classifier_lightgbm_.pkl')
         model_data = joblib.load(model_path)
         # Populate dummy feature data
         features = model_data.get('feature_selector_features', [])#get the features used in training
@@ -335,7 +335,8 @@ async def get_model_features():
     global model_data
     if model_data is None:
         load_model()
-    features = model_data['feature_selector_features'] if model_data else []
+    # Always return the full feature list from the model
+    features = model_data['feature_selector_features'] if model_data and 'feature_selector_features' in model_data else []
     example = model_data.get('dummy_example', {})
     return {"features": features, "example": example}
 
