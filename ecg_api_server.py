@@ -10,6 +10,7 @@ import logging
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder
 import io
+from file_processor import ecg_parse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -83,7 +84,7 @@ def load_model():
             elif 'qrs' in feat.lower():
                 dummy_example[feat] = 98.2
             else:
-                dummy_example[feat] = 0
+                dummy_example[feat] = 0.0
         model_data['dummy_example'] = dummy_example
         logger.info("Model loaded successfully and dummy feature data populated")
         return True
@@ -214,7 +215,6 @@ async def predict_single(features: Dict[str, Any], threshold: float = 0.5):
         
         # Predict
         model = model_data['model']
-        
         probability = float(model.predict_proba(processed_data)[0, 1])
         
         # Create response
@@ -340,6 +340,23 @@ async def get_model_features():
     features = model_data['feature_names'] if model_data and 'feature_names' in model_data else []
     example = model_data.get('dummy_example', {})
     return {"features": features, "example": example}
+
+@app.post("/parse-xml")
+async def parse_xml(file: UploadFile = File(...)):
+    """Parse uploaded XML file and extract ECG features using ecg_parse"""
+    try:
+        contents = await file.read()
+        # Save to a temporary file for parsing
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.xml') as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
+        features = ecg_parse(tmp_path)
+        os.remove(tmp_path)
+        return {"features": features}
+    except Exception as e:
+        logger.error(f"XML parsing error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"XML parsing failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
