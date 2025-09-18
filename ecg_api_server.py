@@ -1,23 +1,4 @@
-# Endpoint to provide model features and example values for frontend
-@app.get("/model/features")
-async def get_model_features():
-    global model_data
-    if model_data is None:
-        load_model()
-    features = model_data['feature_selector_features'] if model_data else []
-    example = {}
-    for feat in features:
-        if feat.lower() == 'gender':
-            example[feat] = 'M'
-        elif feat.lower() == 'age':
-            example[feat] = 65
-        elif 'qtc' in feat.lower():
-            example[feat] = 420.5
-        elif 'qrs' in feat.lower():
-            example[feat] = 98.2
-        else:
-            example[feat] = 0
-    return {"features": features, "example": example}
+
 import os
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
