@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECG Abnormality Classification</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .normal { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .abnormal { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .api-info {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🫀 ECG Abnormality Classification</h1>
+        
+        <div class="api-info">
+            <strong>API Endpoint:</strong> 
+            <span id="api-url">https://your-ecg-api.herokuapp.com</span>
+            <button onclick="updateApiUrl()">Update URL</button>
+        </div>
+
+        <h2>Single ECG Prediction</h2>
+        <form id="ecgForm">
+            <div class="form-group">
+                <label for="age">Age:</label>
+                <input type="number" id="age" name="age" step="1" placeholder="Enter patient age">
+            </div>
+            
+            <div class="form-group">
+                <label for="gender">Gender:</label>
+                <select id="gender" name="gender">
+                    <option value="">Select gender</option>
+                    <option value="M">Male (M)</option>
+                    <option value="F">Female (F)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="qtc">QTC Interval:</label>
+                <input type="number" id="qtc" name="qtc" step="0.1" placeholder="Enter QTC interval">
+            </div>
+            
+            <div class="form-group">
+                <label for="qrs">QRS Duration:</label>
+                <input type="number" id="qrs" name="qrs" step="0.1" placeholder="Enter QRS duration">
+            </div>
+            
+            <div class="form-group">
+                <label for="threshold">Classification Threshold:</label>
+                <input type="number" id="threshold" name="threshold" min="0" max="1" step="0.01" value="0.5" placeholder="0.5">
+            </div>
+            
+            <button type="submit">Predict</button>
+            <button type="button" onclick="clearForm()">Clear</button>
+            <button type="button" onclick="fillSample()">Sample Data</button>
+        </form>
+
+        <div id="result"></div>
+        
+        <h2>API Testing</h2>
+        <button onclick="testHealth()">Test Health Check</button>
+        <button onclick="testModelInfo()">Test Model Info</button>
+        <button onclick="testBatch()">Test Batch Prediction</button>
+    </div>
+
+    <script>
+        let currentApiUrl = 'https://your-ecg-api.herokuapp.com';
+        
+        function updateApiUrl() {
+            const newUrl = prompt('Enter your Heroku app URL:', currentApiUrl);
+            if (newUrl && newUrl.trim()) {
+                currentApiUrl = newUrl.trim();
+                document.getElementById('api-url').textContent = currentApiUrl;
+            }
+        }
+        
+        function fillSample() {
+            document.getElementById('age').value = '65';
+            document.getElementById('gender').value = 'M';
+            document.getElementById('qtc').value = '420.5';
+            document.getElementById('qrs').value = '98.2';
+        }
+        
+        function clearForm() {
+            document.getElementById('ecgForm').reset();
+            document.getElementById('result').innerHTML = '';
+        }
+        
+        async function testHealth() {
+            try {
+                const response = await fetch(`${currentApiUrl}/health`);
+                const data = await response.json();
+                showResult(`Health Check: ${JSON.stringify(data, null, 2)}`, 'normal');
+            } catch (error) {
+                showResult(`Health Check Failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testModelInfo() {
+            try {
+                const response = await fetch(`${currentApiUrl}/model/info`);
+                const data = await response.json();
+                showResult(`Model Info: ${JSON.stringify(data, null, 2)}`, 'normal');
+            } catch (error) {
+                showResult(`Model Info Failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testBatch() {
+            const batchData = {
+                "data": [
+                    {"Age": 45, "Gender": "F", "ECG_QTC_INTERVAL": 400, "ECG_QRS_DURATION": 85},
+                    {"Age": 70, "Gender": "M", "ECG_QTC_INTERVAL": 450, "ECG_QRS_DURATION": 110},
+                    {"Age": 30, "Gender": "F", "ECG_QTC_INTERVAL": 380, "ECG_QRS_DURATION": 80}
+                ],
+                "threshold": 0.5
+            };
+            
+            try {
+                const response = await fetch(`${currentApiUrl}/predict/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(batchData)
+                });
+                
+                const data = await response.json();
+                showResult(`Batch Prediction: ${JSON.stringify(data.summary, null, 2)}`, 'normal');
+            } catch (error) {
+                showResult(`Batch Prediction Failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+        
+        document.getElementById('ecgForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {};
+            
+            // Build the data object
+            if (formData.get('age')) data.Age = parseFloat(formData.get('age'));
+            if (formData.get('gender')) data.Gender = formData.get('gender');
+            if (formData.get('qtc')) data.ECG_QTC_INTERVAL = parseFloat(formData.get('qtc'));
+            if (formData.get('qrs')) data.ECG_QRS_DURATION = parseFloat(formData.get('qrs'));
+            
+            const threshold = parseFloat(formData.get('threshold')) || 0.5;
+            
+            try {
+                const response = await fetch(`${currentApiUrl}/predict?threshold=${threshold}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                const resultClass = result.prediction === 'Normal' ? 'normal' : 'abnormal';
+                const resultHTML = `
+                    <h3>Prediction Result:</h3>
+                    <p><strong>Prediction:</strong> ${result.prediction}</p>
+                    <p><strong>Probability:</strong> ${(result.probability * 100).toFixed(2)}%</p>
+                    <p><strong>Confidence:</strong> ${(result.confidence * 100).toFixed(2)}%</p>
+                    <p><strong>Risk Level:</strong> ${result.risk_level}</p>
+                `;
+                
+                showResult(resultHTML, resultClass);
+                
+            } catch (error) {
+                showResult(`Prediction failed: ${error.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
