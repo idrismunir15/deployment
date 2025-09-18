@@ -1,4 +1,3 @@
-
 import os
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,30 +37,6 @@ app.add_middleware(
 model_data = None
 
 # Pydantic models for API
-class ECGFeatures(BaseModel):
-    class Config:
-        @staticmethod
-        def schema_extra():
-            global model_data
-            if model_data is None:
-                try:
-                    load_model()
-                except Exception:
-                    return {"example": {}}
-            features = model_data['feature_selector_features'] if model_data else []
-            example = {}
-            for feat in features:
-                if feat.lower() == 'gender':
-                    example[feat] = 'M'
-                elif feat.lower() == 'age':
-                    example[feat] = 65
-                elif 'qtc' in feat.lower():
-                    example[feat] = 420.5
-                elif 'qrs' in feat.lower():
-                    example[feat] = 98.2
-                else:
-                    example[feat] = 0
-            return {"example": example}
 
 class ECGBatchRequest(BaseModel):
     """Batch ECG data input"""
@@ -95,7 +70,22 @@ def load_model():
         # Try to load model file
         model_path = os.environ.get('MODEL_PATH', 'ecg_abnormality_classifier_lightgbm.pkl')
         model_data = joblib.load(model_path)
-        logger.info("Model loaded successfully")
+        # Populate dummy feature data
+        features = model_data.get('feature_selector_features', [])
+        dummy_example = {}
+        for feat in features:
+            if feat.lower() == 'gender':
+                dummy_example[feat] = 'M'
+            elif feat.lower() == 'age':
+                dummy_example[feat] = 65
+            elif 'qtc' in feat.lower():
+                dummy_example[feat] = 420.5
+            elif 'qrs' in feat.lower():
+                dummy_example[feat] = 98.2
+            else:
+                dummy_example[feat] = 0
+        model_data['dummy_example'] = dummy_example
+        logger.info("Model loaded successfully and dummy feature data populated")
         return True
     except Exception as e:
         logger.error(f"Failed to load model: {str(e)}")
@@ -338,6 +328,16 @@ async def predict_csv(file: UploadFile = File(...), threshold: float = 0.5):
     except Exception as e:
         logger.error(f"CSV prediction error: {str(e)}")
         raise HTTPException(status_code=400, detail=f"CSV prediction failed: {str(e)}")
+
+@app.get("/model/features")
+async def get_model_features():
+    """Get model features and example"""
+    global model_data
+    if model_data is None:
+        load_model()
+    features = model_data['feature_selector_features'] if model_data else []
+    example = model_data.get('dummy_example', {})
+    return {"features": features, "example": example}
 
 if __name__ == "__main__":
     import uvicorn

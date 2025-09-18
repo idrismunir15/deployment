@@ -117,14 +117,17 @@
         let exampleValues = {};
 
         async function fetchFeatures() {
+            const form = document.getElementById('ecgForm');
+            form.innerHTML = '<div style="text-align:center;padding:20px"><span>Loading features...</span></div>';
             try {
                 const response = await fetch(`${currentApiUrl}/model/features`);
+                if (!response.ok) throw new Error('API returned ' + response.status);
                 const data = await response.json();
-                features = data.features;
-                exampleValues = data.example;
+                features = Array.isArray(data.features) ? data.features.sort() : [];
+                exampleValues = data.example || {};
                 renderForm();
             } catch (error) {
-                document.getElementById('ecgForm').innerHTML = '<div class="error">Failed to load features from API.</div>';
+                form.innerHTML = `<div class="error">Failed to load features from API.<br>${error.message}</div>`;
             }
         }
 
