@@ -68,7 +68,7 @@ def load_model():
     global model_data
     try:
         # Try to load model file
-        model_path = os.environ.get('MODEL_PATH', 'ecg_abnormality_classifier_lightgbm_.pkl')
+        model_path = os.environ.get('MODEL_PATH', 'ecg_abnormality_classifier_lightgbm.pkl')
         model_data = joblib.load(model_path)
         # Populate dummy feature data
         features = model_data.get('feature_names', [])#get the features used in training
@@ -214,6 +214,7 @@ async def predict_single(features: Dict[str, Any], threshold: float = 0.5):
         
         # Predict
         model = model_data['model']
+        
         probability = float(model.predict_proba(processed_data)[0, 1])
         
         # Create response
