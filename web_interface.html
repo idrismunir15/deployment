@@ -113,9 +113,20 @@
             }
         }
         
-        // Features and example values from backend
-        const features = ["Age", "Gender", "ECG_QTC_INTERVAL", "ECG_QRS_DURATION"];
-        const exampleValues = {"Age": 65, "Gender": "M", "ECG_QTC_INTERVAL": 420.5, "ECG_QRS_DURATION": 98.2};
+        let features = [];
+        let exampleValues = {};
+
+        async function fetchFeatures() {
+            try {
+                const response = await fetch(`${currentApiUrl}/model/features`);
+                const data = await response.json();
+                features = data.features;
+                exampleValues = data.example;
+                renderForm();
+            } catch (error) {
+                document.getElementById('ecgForm').innerHTML = '<div class="error">Failed to load features from API.</div>';
+            }
+        }
 
         function renderForm() {
             const form = document.getElementById('ecgForm');
@@ -158,7 +169,7 @@
             document.getElementById('threshold').value = '0.5';
         }
 
-        renderForm();
+        fetchFeatures();
         
         function clearForm() {
             document.getElementById('ecgForm').reset();
