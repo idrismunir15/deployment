@@ -232,15 +232,22 @@
             
             const formData = new FormData(e.target);
             const data = {};
-            
-            // Build the data object
-            if (formData.get('age')) data.Age = parseFloat(formData.get('age'));
-            if (formData.get('gender')) data.Gender = formData.get('gender');
-            if (formData.get('qtc')) data.ECG_QTC_INTERVAL = parseFloat(formData.get('qtc'));
-            if (formData.get('qrs')) data.ECG_QRS_DURATION = parseFloat(formData.get('qrs'));
-            
+            // Build the data object for all features
+            features.forEach(feat => {
+                let val = formData.get(feat);
+                if (val !== null && val !== '') {
+                    if (feat.toLowerCase() === 'gender') {
+                        data[feat] = val;
+                    } else {
+                        data[feat] = parseFloat(val);
+                    }
+                } else {
+                    // If empty, use example value or 0
+                    data[feat] = exampleValues[feat] !== undefined ? exampleValues[feat] : 0;
+                }
+            });
             const threshold = parseFloat(formData.get('threshold')) || 0.5;
-            
+
             try {
                 const response = await fetch(`${currentApiUrl}/predict?threshold=${threshold}`, {
                     method: 'POST',
@@ -249,13 +256,13 @@
                     },
                     body: JSON.stringify(data)
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const result = await response.json();
-                
+
                 const resultClass = result.prediction === 'Normal' ? 'normal' : 'abnormal';
                 const resultHTML = `
                     <h3>Prediction Result:</h3>
@@ -264,9 +271,9 @@
                     <p><strong>Confidence:</strong> ${(result.confidence * 100).toFixed(2)}%</p>
                     <p><strong>Risk Level:</strong> ${result.risk_level}</p>
                 `;
-                
+
                 showResult(resultHTML, resultClass);
-                
+
             } catch (error) {
                 showResult(`Prediction failed: ${error.message}`, 'error');
             }
