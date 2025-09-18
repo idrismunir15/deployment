@@ -39,20 +39,32 @@ model_data = None
 # Pydantic models for API
 class ECGFeatures(BaseModel):
     """ECG features input model"""
-    Age: Optional[float] = Field(None, description="Patient age")
-    Gender: Optional[str] = Field(None, description="Patient gender (M/F)")
-    ECG_QTC_INTERVAL: Optional[float] = Field(None, description="QTC interval")
-    ECG_QRS_DURATION: Optional[float] = Field(None, description="QRS duration")
+    # Features will be initialized with example values from the model
+    pass
     
     class Config:
-        schema_extra = {
-            "example": {
-                "Age": 65,
-                "Gender": "M",
-                "ECG_QTC_INTERVAL": 420.5,
-                "ECG_QRS_DURATION": 98.2
-            }
-        }
+        @staticmethod
+        def schema_extra():
+            global model_data
+            if model_data is None:
+                try:
+                    load_model()
+                except Exception:
+                    return {"example": {}}
+            features = model_data['feature_selector_features'] if model_data else []
+            example = {}
+            for feat in features:
+                if feat.lower() == 'gender':
+                    example[feat] = 'M'
+                elif feat.lower() == 'age':
+                    example[feat] = 65
+                elif 'qtc' in feat.lower():
+                    example[feat] = 420.5
+                elif 'qrs' in feat.lower():
+                    example[feat] = 98.2
+                else:
+                    example[feat] = 0
+            return {"example": example}
 
 class ECGBatchRequest(BaseModel):
     """Batch ECG data input"""

@@ -91,38 +91,7 @@
 
         <h2>Single ECG Prediction</h2>
         <form id="ecgForm">
-            <div class="form-group">
-                <label for="age">Age:</label>
-                <input type="number" id="age" name="age" step="1" placeholder="Enter patient age">
-            </div>
-            
-            <div class="form-group">
-                <label for="gender">Gender:</label>
-                <select id="gender" name="gender">
-                    <option value="">Select gender</option>
-                    <option value="M">Male (M)</option>
-                    <option value="F">Female (F)</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="qtc">QTC Interval:</label>
-                <input type="number" id="qtc" name="qtc" step="0.1" placeholder="Enter QTC interval">
-            </div>
-            
-            <div class="form-group">
-                <label for="qrs">QRS Duration:</label>
-                <input type="number" id="qrs" name="qrs" step="0.1" placeholder="Enter QRS duration">
-            </div>
-            
-            <div class="form-group">
-                <label for="threshold">Classification Threshold:</label>
-                <input type="number" id="threshold" name="threshold" min="0" max="1" step="0.01" value="0.5" placeholder="0.5">
-            </div>
-            
-            <button type="submit">Predict</button>
-            <button type="button" onclick="clearForm()">Clear</button>
-            <button type="button" onclick="fillSample()">Sample Data</button>
+            <!-- Dynamic feature fields will be inserted here -->
         </form>
 
         <div id="result"></div>
@@ -144,12 +113,52 @@
             }
         }
         
-        function fillSample() {
-            document.getElementById('age').value = '65';
-            document.getElementById('gender').value = 'M';
-            document.getElementById('qtc').value = '420.5';
-            document.getElementById('qrs').value = '98.2';
+        // Features and example values from backend
+        const features = ["Age", "Gender", "ECG_QTC_INTERVAL", "ECG_QRS_DURATION"];
+        const exampleValues = {"Age": 65, "Gender": "M", "ECG_QTC_INTERVAL": 420.5, "ECG_QRS_DURATION": 98.2};
+
+        function renderForm() {
+            const form = document.getElementById('ecgForm');
+            form.innerHTML = '';
+            features.forEach(feat => {
+                let html = '';
+                if (feat.toLowerCase() === 'gender') {
+                    html = `<div class="form-group">
+                        <label for="${feat}">${feat}:</label>
+                        <select id="${feat}" name="${feat}">
+                            <option value="">Select gender</option>
+                            <option value="M">Male (M)</option>
+                            <option value="F">Female (F)</option>
+                        </select>
+                    </div>`;
+                } else {
+                    html = `<div class="form-group">
+                        <label for="${feat}">${feat.replace(/_/g, ' ')}:</label>
+                        <input type="number" id="${feat}" name="${feat}" step="0.1" placeholder="Enter ${feat.replace(/_/g, ' ')}">
+                    </div>`;
+                }
+                form.innerHTML += html;
+            });
+            // Add threshold field and buttons
+            form.innerHTML += `<div class="form-group">
+                <label for="threshold">Classification Threshold:</label>
+                <input type="number" id="threshold" name="threshold" min="0" max="1" step="0.01" value="0.5" placeholder="0.5">
+            </div>
+            <button type="submit">Predict</button>
+            <button type="button" onclick="clearForm()">Clear</button>
+            <button type="button" onclick="fillSample()">Sample Data</button>`;
         }
+
+        function fillSample() {
+            features.forEach(feat => {
+                if (document.getElementById(feat)) {
+                    document.getElementById(feat).value = exampleValues[feat] || '';
+                }
+            });
+            document.getElementById('threshold').value = '0.5';
+        }
+
+        renderForm();
         
         function clearForm() {
             document.getElementById('ecgForm').reset();
